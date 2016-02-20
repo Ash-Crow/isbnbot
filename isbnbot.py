@@ -72,18 +72,18 @@ def fix_isbn(prop, isbn_version, is_isbnversion):
     print(u'\n== Fixing {}s =='.format(isbn_version))
     wrong_isbn = []
     isbn_list = get_isbn_list(prop)
-    non_hyphenated = 0
+    wrong_hyphenation = 0
     for r in isbn_list:
         wd_isbn = r['isbn']['value']
         qid = get_qid(r['book']['value'])
         if is_isbnversion(wd_isbn):
-            if wd_isbn.isdigit():
-                isbn_mask = isbnlib.mask(wd_isbn)
-                non_hyphenated += set_mask(qid, prop, wd_isbn, isbn_mask)
+            isbn_mask = isbnlib.mask(wd_isbn)
+            if isbn_mask != wd_isbn:
+                wrong_hyphenation += set_mask(qid, prop, wd_isbn, isbn_mask)
         else:
             wrong_isbn.append((qid, wd_isbn))
     
-    print('{} missing ISBN hyphenation fixed.'.format(non_hyphenated))
+    print('{} wrong ISBN hyphenation(s) fixed.'.format(wrong_hyphenation))
     return wrong_isbn
 
 def format_isbn_list(isbn_list, isbn_version):
