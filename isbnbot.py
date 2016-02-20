@@ -3,6 +3,8 @@
 import pywikibot
 import isbnlib
 from SPARQLWrapper import SPARQLWrapper, JSON
+from termcolor import colored
+
 
 site = pywikibot.Site("wikidata", "wikidata")
 repo = site.data_repository()
@@ -43,7 +45,7 @@ def set_mask(qid, prop, old_isbn, new_isbn):
         for claim in claim_list:
             target = claim.getTarget()
             if target == old_isbn:
-                print("Correcting {} to {}".format(old_isbn, new_isbn))
+                print(colored("Correcting {} to {}".format(old_isbn, new_isbn), 'green'))
                 mask_set = 1
                 if make_actual_change:
                     claim.changeTarget(new_isbn)
@@ -69,7 +71,7 @@ def fix_isbn(prop, isbn_version, is_isbnversion):
     2.1. If valid but badly hyphenated, fixes it
     2.2. If not valid, adds it to an error list.
     """
-    print(u'\n== Fixing {}s =='.format(isbn_version))
+    print(colored('\n== Fixing {}s =='.format(isbn_version), 'yellow'))
     wrong_isbn = []
     isbn_list = get_isbn_list(prop)
     wrong_hyphenation = 0
@@ -83,7 +85,7 @@ def fix_isbn(prop, isbn_version, is_isbnversion):
         else:
             wrong_isbn.append((qid, wd_isbn))
     
-    print('{} wrong ISBN hyphenation(s) fixed.'.format(wrong_hyphenation))
+    print(colored('{} wrong ISBN hyphenation(s) fixed.'.format(wrong_hyphenation), 'blue'))
     return wrong_isbn
 
 def format_isbn_list(isbn_list, isbn_version):
@@ -108,7 +110,7 @@ error_report += format_isbn_list(wrong_isbn13,'ISBN-13')
 error_report += '\n' + format_isbn_list(wrong_isbn10,'ISBN-10')
 
 if make_actual_change:
-    print('\n= Error report =\n')
+    print(colored('\n= Error report =\n', 'yellow'))
     page = pywikibot.Page(site, error_page)
     oldcontent = page.get()
     if oldcontent != error_report:
