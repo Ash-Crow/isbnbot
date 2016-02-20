@@ -11,7 +11,7 @@ repo = site.data_repository()
 make_actual_change = True
 
 # Set the error page
-error_page = u'User:Ash_Crow/ISBN'
+error_page = u'Special:MyPage/ISBN'
 
 def wikidata_sparql_query(query):
     """
@@ -66,7 +66,7 @@ def fix_isbn(prop, isbn_version, is_isbnversion):
     """
     1. Gets the ISBNs list
     2. checks if the ISBN is valid
-    2.1. If valid but not hyphenated, fixes it
+    2.1. If valid but badly hyphenated, fixes it
     2.2. If not valid, adds it to an error list.
     """
     print(u'\n== Fixing {}s =='.format(isbn_version))
