@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 
 import pywikibot
 import isbnlib
@@ -9,6 +9,9 @@ repo = site.data_repository()
 
 # Change this to True to actually edit Wikidata
 make_actual_change = True
+
+# Set the error page
+error_page = u'User:Ash_Crow/ISBN'
 
 def wikidata_sparql_query(query):
     """
@@ -32,7 +35,7 @@ def set_mask(qid, prop, old_isbn, new_isbn):
     """
     Replaces the ISBN-10 or -13 value on Wikidata with the correct hyphenation
     """
-    
+    mask_set = 0
     if new_isbn:
         item = pywikibot.ItemPage(repo, qid)
         item_dict = item.get() #Get the item dictionary
@@ -41,8 +44,10 @@ def set_mask(qid, prop, old_isbn, new_isbn):
             target = claim.getTarget()
             if target == old_isbn:
                 print("Correcting {} to {}".format(old_isbn, new_isbn))
+                mask_set = 1
                 if make_actual_change:
                     claim.changeTarget(new_isbn)
+    return mask_set
 
 def get_isbn_list(prop):
     results = wikidata_sparql_query(
@@ -67,15 +72,18 @@ def fix_isbn(prop, isbn_version, is_isbnversion):
     print(u'\n== Fixing {}s =='.format(isbn_version))
     wrong_isbn = []
     isbn_list = get_isbn_list(prop)
+    non_hyphenated = 0
     for r in isbn_list:
         wd_isbn = r['isbn']['value']
         qid = get_qid(r['book']['value'])
         if is_isbnversion(wd_isbn):
             if wd_isbn.isdigit():
                 isbn_mask = isbnlib.mask(wd_isbn)
-                set_mask(qid, prop, wd_isbn, isbn_mask)
+                non_hyphenated += set_mask(qid, prop, wd_isbn, isbn_mask)
         else:
             wrong_isbn.append((qid, wd_isbn))
+    
+    print('{} missing ISBN hyphenation fixed.'.format(non_hyphenated))
     return wrong_isbn
 
 def format_isbn_list(isbn_list, isbn_version):
@@ -100,7 +108,8 @@ error_report += format_isbn_list(wrong_isbn13,'ISBN-13')
 error_report += '\n' + format_isbn_list(wrong_isbn10,'ISBN-10')
 
 if make_actual_change:
-    page = pywikibot.Page(site, u'User:Ash_Crow/ISBN')
+    print('\n= Error report =\n')
+    page = pywikibot.Page(site, error_page)
     oldcontent = page.get()
     if oldcontent != error_report:
         page.put(error_report, "Update")
