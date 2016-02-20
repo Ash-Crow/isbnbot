@@ -7,8 +7,8 @@ from SPARQLWrapper import SPARQLWrapper, JSON
 site = pywikibot.Site("wikidata", "wikidata")
 repo = site.data_repository()
 
-# Change this to true to actually edit Wikidata
-make_actual_change = False
+# Change this to True to actually edit Wikidata
+make_actual_change = True
 
 def wikidata_sparql_query(query):
     """
@@ -58,6 +58,12 @@ def get_isbn_list(prop):
     return results["results"]["bindings"]
 
 def fix_isbn(prop, isbn_version, is_isbnversion):
+    """
+    1. Gets the ISBNs list
+    2. checks if the ISBN is valid
+    2.1. If valid but not hyphenated, fixes it
+    2.2. If not valid, adds it to an error list.
+    """
     print(u'\n== Fixing {}s =='.format(isbn_version))
     wrong_isbn = []
     isbn_list = get_isbn_list(prop)
@@ -72,16 +78,31 @@ def fix_isbn(prop, isbn_version, is_isbnversion):
             wrong_isbn.append((qid, wd_isbn))
     return wrong_isbn
 
-def wrong_isbn_list(isbn_list, isbn_version):
+def format_isbn_list(isbn_list, isbn_version):
+    """
+    Formats the  list for on-wiki publication
+    """
+    text = ""
     if len(isbn_list):
-        print(u'\n== Wrong {}s =='.format(isbn_version))
+        isbn_list = sorted(isbn_list)
+        text += u'== Wrong {}s ==\n'.format(isbn_version)
         for t in isbn_list:
-            print(u'# {{{{Q|{}}}}}: {}'.format(t[0], t[1]))
+            text += u'# {{{{Q|{}}}}}: {}\n'.format(t[0], t[1])
+    return text
 
 ### Main program
 wrong_isbn13 = fix_isbn('P212', 'ISBN-13', isbnlib.is_isbn13)
 wrong_isbn10 = fix_isbn('P957', 'ISBN-10', isbnlib.is_isbn10)
 
 ### Post_treatment
-wrong_isbn_list(wrong_isbn13,'ISBN-13')
-wrong_isbn_list(wrong_isbn10,'ISBN-10')
+error_report = ""
+error_report += format_isbn_list(wrong_isbn13,'ISBN-13')
+error_report += '\n' + format_isbn_list(wrong_isbn10,'ISBN-10')
+
+if make_actual_change:
+    page = pywikibot.Page(site, u'User:Ash_Crow/ISBN')
+    oldcontent = page.get()
+    if oldcontent != error_report:
+        page.put(error_report, "Update")
+
+print('\n' + error_report)
